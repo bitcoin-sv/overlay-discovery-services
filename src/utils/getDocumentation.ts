@@ -1,5 +1,5 @@
 import { promises as fs } from 'fs'
-import { resolve } from 'path'
+import { resolve, dirname } from 'path'
 /**
  * Returns documentation specific to the provided filename
  * @param {string} filePath - The path of the markdown file
@@ -7,7 +7,7 @@ import { resolve } from 'path'
  */
 async function getDocumentation(filePath: string): Promise<string> {
   try {
-    const resolvedPath = resolve(process.cwd(), filePath)
+    const resolvedPath = resolve(dirname(require.resolve('@bsv/overlay-discovery-services')), '../../', filePath)
     const data = await fs.readFile(resolvedPath, 'utf-8')
     return data
   } catch (error) {
