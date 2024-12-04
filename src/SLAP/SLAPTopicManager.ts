@@ -6,7 +6,7 @@ import { isValidServiceName } from '../utils/isValidServiceName.js'
 import { getDocumentation } from '../utils/getDocumentation.js'
 
 /**
- * SLAP Topic Manager
+ * 🤚 SLAP Topic Manager
  * Implements the TopicManager interface for SLAP (Service Lookup Availability Protocol) tokens.
  *
  * The SLAP Topic Manager identifies admissible outputs based on SLAP protocol requirements.
@@ -19,7 +19,10 @@ export class SLAPTopicManager implements TopicManager {
    * @param previousCoins - The previous coins to consider.
    * @returns A promise that resolves with the admittance instructions.
    */
-  async identifyAdmissibleOutputs(beef: number[], previousCoins: number[]): Promise<AdmittanceInstructions> {
+  async identifyAdmissibleOutputs(
+    beef: number[],
+    previousCoins: number[]
+  ): Promise<AdmittanceInstructions> {
     const outputsToAdmit: number[] = []
     try {
       const parsedTransaction = Transaction.fromBEEF(beef)
@@ -44,15 +47,37 @@ export class SLAPTopicManager implements TopicManager {
           if (!isValidServiceName(service)) continue
 
           // Verify the token locking key and signature
-          verifyToken(identityKey, result.lockingPublicKey, result.fields, result.signature)
+          verifyToken(
+            identityKey,
+            result.lockingPublicKey,
+            result.fields,
+            result.signature
+          )
 
           outputsToAdmit.push(i)
         } catch (error) {
-          console.error('Error processing output:', error)
+          // It's common for other outputs to be invalid; no need to log an error here
+          continue
         }
       }
     } catch (error) {
-      console.error('Error identifying admissible outputs:', error)
+      // Only log an error if no outputs were admitted and no previous coins consumed
+      if (outputsToAdmit.length === 0 && (!previousCoins || previousCoins.length === 0)) {
+        console.error('🤚 Error identifying admissible outputs:', error)
+      }
+    }
+
+    // Friendly logging with slappy emojis!
+    if (outputsToAdmit.length > 0) {
+      console.log(`👏 Admitted ${outputsToAdmit.length} SLAP ${outputsToAdmit.length === 1 ? 'output' : 'outputs'}!`)
+    }
+
+    if (previousCoins && previousCoins.length > 0) {
+      console.log(`✋ Consumed ${previousCoins.length} previous SLAP ${previousCoins.length === 1 ? 'coin' : 'coins'}!`)
+    }
+
+    if (outputsToAdmit.length === 0 && (!previousCoins || previousCoins.length === 0)) {
+      console.warn('😕 No SLAP outputs admitted and no previous SLAP coins consumed.')
     }
 
     return {
@@ -82,7 +107,7 @@ export class SLAPTopicManager implements TopicManager {
   }> {
     return {
       name: 'SLAP Topic Manager',
-      shortDescription: 'Manages SLAP tokens for service lookup availability.',
+      shortDescription: 'Manages SLAP tokens for service lookup availability.'
     }
   }
 }
