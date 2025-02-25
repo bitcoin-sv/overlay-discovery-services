@@ -88,154 +88,18 @@ Links: [API](#api), [Interfaces](#interfaces), [Classes](#classes), [Variables](
 
 | |
 | --- |
-| [LegacyNinjaAdvertiser](#class-legacyninjaadvertiser) |
 | [SHIPLookupService](#class-shiplookupservice) |
 | [SHIPStorage](#class-shipstorage) |
 | [SHIPTopicManager](#class-shiptopicmanager) |
 | [SLAPLookupService](#class-slaplookupservice) |
 | [SLAPStorage](#class-slapstorage) |
 | [SLAPTopicManager](#class-slaptopicmanager) |
+| [WalletAdvertiser](#class-walletadvertiser) |
 
 Links: [API](#api), [Interfaces](#interfaces), [Classes](#classes), [Variables](#variables)
 
 ---
 
-### Class: LegacyNinjaAdvertiser
-
-Implements the Advertiser interface for managing SHIP and SLAP advertisements using a Ninja.
-
-```ts
-export class LegacyNinjaAdvertiser {
-    constructor(public privateKey: string, public dojoURL: string, public hostingDomain: string) 
-    setLookupEngine(engine: Engine): void 
-    async createAdvertisements(adsData: AdvertisementData[]): Promise<TaggedBEEF> 
-    async findAllAdvertisements(protocol: "SHIP" | "SLAP"): Promise<Advertisement[]> 
-    async revokeAdvertisements(advertisements: Advertisement[]): Promise<TaggedBEEF> 
-    parseAdvertisement(outputScript: Script): Advertisement 
-}
-```
-
-<details>
-
-<summary>Class LegacyNinjaAdvertiser Details</summary>
-
-#### Constructor
-
-Constructs a new NinjaAdvertiser instance.
-
-```ts
-constructor(public privateKey: string, public dojoURL: string, public hostingDomain: string) 
-```
-
-Argument Details
-
-+ **privateKey**
-  + The private key used for signing transactions.
-+ **dojoURL**
-  + The URL of the dojo server for the Ninja.
-+ **hostingDomain**
-  + The base server URL for the NinjaAdvertiser.
-
-#### Method createAdvertisements
-
-Utility function to create multiple advertisements in a single transaction.
-
-```ts
-async createAdvertisements(adsData: AdvertisementData[]): Promise<TaggedBEEF> 
-```
-
-Returns
-
-A promise that resolves to an array of TaggedBEEF objects.
-
-Argument Details
-
-+ **privateKey**
-  + The private key used to sign the transaction.
-+ **adsData**
-  + Array of advertisement details.
-+ **ninja**
-  + Ninja instance for transaction processing.
-+ **note**
-  + A note attached to the transaction.
-
-Throws
-
-Will throw an error if the locking key is invalid.
-
-#### Method findAllAdvertisements
-
-Finds all SHIP advertisements for a given topic.
-
-```ts
-async findAllAdvertisements(protocol: "SHIP" | "SLAP"): Promise<Advertisement[]> 
-```
-
-Returns
-
-A promise that resolves to an array of SHIP advertisements.
-
-Argument Details
-
-+ **topic**
-  + The topic name to search for.
-
-#### Method parseAdvertisement
-
-Parses an advertisement from the provided output script.
-
-```ts
-parseAdvertisement(outputScript: Script): Advertisement 
-```
-
-Returns
-
-An Advertisement object if the script matches the expected format, otherwise throws an error.
-
-Argument Details
-
-+ **outputScript**
-  + The output script to parse.
-
-#### Method revokeAdvertisements
-
-Revokes an existing advertisement.
-
-```ts
-async revokeAdvertisements(advertisements: Advertisement[]): Promise<TaggedBEEF> 
-```
-
-Returns
-
-A promise that resolves to the revoked advertisement as TaggedBEEF.
-
-Argument Details
-
-+ **advertisements**
-  + The advertisements to revoke, either SHIP or SLAP.
-
-#### Method setLookupEngine
-
-Sets the Engine instance to be used by this NinjaAdvertiser. This method allows for late
-binding of the Engine, thus avoiding circular dependencies during instantiation. The Engine
-provides necessary context with the relevant topic managers and lookup services,
-as well as the lookup function used for querying advertisements.
-
-```ts
-setLookupEngine(engine: Engine): void 
-```
-
-Argument Details
-
-+ **engine**
-  + The Engine instance to be associated with this NinjaAdvertiser. The Engine should
-be fully initialized before being passed to this method to ensure all functionalities are available.
-
-</details>
-
-Links: [API](#api), [Interfaces](#interfaces), [Classes](#classes), [Variables](#variables)
-
----
 ### Class: SHIPLookupService
 
 Implements the SHIP lookup service
@@ -494,7 +358,7 @@ Links: [API](#api), [Interfaces](#interfaces), [Classes](#classes), [Variables](
 ---
 ### Class: SHIPTopicManager
 
-SHIP Topic Manager
+🚢 SHIP Topic Manager
 Implements the TopicManager interface for SHIP (Service Host Interconnect Protocol) tokens.
 
 The SHIP Topic Manager identifies admissible outputs based on SHIP protocol requirements.
@@ -831,7 +695,7 @@ Links: [API](#api), [Interfaces](#interfaces), [Classes](#classes), [Variables](
 ---
 ### Class: SLAPTopicManager
 
-SLAP Topic Manager
+🤚 SLAP Topic Manager
 Implements the TopicManager interface for SLAP (Service Lookup Availability Protocol) tokens.
 
 The SLAP Topic Manager identifies admissible outputs based on SLAP protocol requirements.
@@ -909,6 +773,140 @@ Argument Details
 Links: [API](#api), [Interfaces](#interfaces), [Classes](#classes), [Variables](#variables)
 
 ---
+### Class: WalletAdvertiser
+
+Implements the Advertiser interface for managing SHIP and SLAP advertisements using a Wallet.
+
+```ts
+export class WalletAdvertiser implements Advertiser {
+    constructor(public chain: "main" | "test", public privateKey: string, public storageURL: string, public hostingDomain: string) 
+    async initWithEngine(engine: Engine): Promise<void> 
+    async createAdvertisements(adsData: AdvertisementData[]): Promise<TaggedBEEF> 
+    async findAllAdvertisements(protocol: "SHIP" | "SLAP"): Promise<Advertisement[]> 
+    async revokeAdvertisements(advertisements: Advertisement[]): Promise<TaggedBEEF> 
+    parseAdvertisement(outputScript: Script): Advertisement 
+}
+```
+
+<details>
+
+<summary>Class WalletAdvertiser Details</summary>
+
+#### Constructor
+
+Constructs a new WalletAdvertiser instance.
+
+```ts
+constructor(public chain: "main" | "test", public privateKey: string, public storageURL: string, public hostingDomain: string) 
+```
+
+Argument Details
+
++ **chain**
+  + The blockchain (main or test) where this advertiser is advertising
++ **privateKey**
+  + The private key used for signing transactions.
++ **storageURL**
+  + The URL of the UTXO storage server for the Wallet.
++ **hostingDomain**
+  + The base server URL where advertisements are made.
+
+#### Method createAdvertisements
+
+Utility function to create multiple advertisements in a single transaction.
+
+```ts
+async createAdvertisements(adsData: AdvertisementData[]): Promise<TaggedBEEF> 
+```
+
+Returns
+
+The Tagged BEEF for the created advertisement
+
+Argument Details
+
++ **adsData**
+  + Array of advertisement details.
+
+Throws
+
+Will throw an error if the locking key is invalid.
+
+#### Method findAllAdvertisements
+
+Finds all SHIP advertisements for a given topic.
+
+```ts
+async findAllAdvertisements(protocol: "SHIP" | "SLAP"): Promise<Advertisement[]> 
+```
+
+Returns
+
+A promise that resolves to an array of SHIP advertisements.
+
+Argument Details
+
++ **topic**
+  + The topic name to search for.
+
+#### Method initWithEngine
+
+Initializes the wallet asynchronously and binds the advertiser with its Engine.
+
+Sets the Engine instance to be used by this WalletAdvertiser. This method allows for late
+binding of the Engine, thus avoiding circular dependencies during instantiation. The Engine
+provides necessary context with the relevant topic managers and lookup services,
+as well as the lookup function used for querying advertisements.
+
+```ts
+async initWithEngine(engine: Engine): Promise<void> 
+```
+
+Argument Details
+
++ **engine**
+  + The Engine instance to be associated with this NinjaAdvertiser. The Engine should
+be fully initialized before being passed to this method to ensure all functionalities are available.
+
+#### Method parseAdvertisement
+
+Parses an advertisement from the provided output script.
+
+```ts
+parseAdvertisement(outputScript: Script): Advertisement 
+```
+
+Returns
+
+An Advertisement object if the script matches the expected format, otherwise throws an error.
+
+Argument Details
+
++ **outputScript**
+  + The output script to parse.
+
+#### Method revokeAdvertisements
+
+Revokes an existing advertisement.
+
+```ts
+async revokeAdvertisements(advertisements: Advertisement[]): Promise<TaggedBEEF> 
+```
+
+Returns
+
+A promise that resolves to the revoked advertisement as TaggedBEEF.
+
+Argument Details
+
++ **advertisements**
+  + The advertisements to revoke, either SHIP or SLAP.
+
+</details>
+
+Links: [API](#api), [Interfaces](#interfaces), [Classes](#classes), [Variables](#variables)
+
+---
 ## Variables
 
 | |
@@ -948,9 +946,8 @@ Links: [API](#api), [Interfaces](#interfaces), [Classes](#classes), [Variables](
 ### Variable: verifyToken
 
 ```ts
-verifyToken = (identityKey: string, lockingPublicKey: string, fields: Buffer[], signature: string): void => {
-    const pubKey = PublicKey.fromString(lockingPublicKey);
-    const hasValidSignature = pubKey.verify(Array.from(Buffer.concat(fields)), Signature.fromDER(signature, "hex"));
+verifyToken = (identityKey: string, lockingPublicKey: PublicKey, fields: number[][], signature: string): void => {
+    const hasValidSignature = lockingPublicKey.verify(fields.reduce((a, e) => [...a, ...e], []), Signature.fromDER(signature, "hex"));
     if (!hasValidSignature)
         throw new Error("Invalid signature!");
 }

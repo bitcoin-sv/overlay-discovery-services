@@ -1,7 +1,6 @@
 import { LookupService, LookupQuestion, LookupAnswer, LookupFormula } from '@bsv/overlay'
 import { SHIPStorage } from './SHIPStorage.js'
-import { Script } from '@bsv/sdk'
-import pushdrop from 'pushdrop'
+import { Script, PushDrop, Utils } from '@bsv/sdk'
 import { SHIPQuery } from 'src/types.js'
 import { getDocumentation } from '../utils/getDocumentation.js'
 
@@ -23,18 +22,12 @@ export class SHIPLookupService implements LookupService {
    */
   async outputAdded?(txid: string, outputIndex: number, outputScript: Script, topic: string): Promise<void> {
     if (topic !== 'tm_ship') return
-
-    const result = pushdrop.decode({
-      script: outputScript.toHex(),
-      fieldFormat: 'buffer'
-    })
-
-    const shipIdentifier = result.fields[0].toString()
-    const identityKey = result.fields[1].toString('hex')
-    const domain = result.fields[2].toString()
-    const topicSupported = result.fields[3].toString()
+    const result = PushDrop.decode(outputScript)
+    const shipIdentifier = Utils.toUTF8(result.fields[0])
+    const identityKey = Utils.toHex(result.fields[1])
+    const domain = Utils.toUTF8(result.fields[2])
+    const topicSupported = Utils.toUTF8(result.fields[3])
     if (shipIdentifier !== 'SHIP') return
-
     await this.storage.storeSHIPRecord(txid, outputIndex, identityKey, domain, topicSupported)
   }
 
