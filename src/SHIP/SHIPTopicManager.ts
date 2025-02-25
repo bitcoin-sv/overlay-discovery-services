@@ -1,6 +1,5 @@
 import { AdmittanceInstructions, TopicManager } from '@bsv/overlay'
-import { Transaction } from '@bsv/sdk'
-import pushdrop from 'pushdrop'
+import { Transaction, PushDrop, Utils } from '@bsv/sdk'
 import { verifyToken } from '../utils/verifyToken.js'
 import { isValidDomain } from '../utils/isValidDomain.js'
 import { getDocumentation } from '../utils/getDocumentation.js'
@@ -26,16 +25,12 @@ export class SHIPTopicManager implements TopicManager {
 
       for (const [i, output] of parsedTransaction.outputs.entries()) {
         try {
-          const result = pushdrop.decode({
-            script: output.lockingScript.toHex(),
-            fieldFormat: 'buffer'
-          })
-
+          const result = PushDrop.decode(output.lockingScript)
           if (result.fields.length !== 4) continue // SHIP tokens should have 4 fields
 
-          const shipIdentifier = result.fields[0].toString()
-          const identityKey = result.fields[1].toString('hex')
-          const domain = result.fields[2].toString()
+          const shipIdentifier = Utils.toUTF8(result.fields[0])
+          const identityKey = Utils.toHex(result.fields[1])
+          const domain = Utils.toUTF8(result.fields[2])
           // const topic = result.fields[3].toString()
 
           if (shipIdentifier !== 'SHIP') continue
@@ -45,7 +40,8 @@ export class SHIPTopicManager implements TopicManager {
           // Additional validations can be added here
 
           // Verify the token locking key and signature
-          verifyToken(identityKey, result.lockingPublicKey, result.fields, result.signature)
+          const signature = Utils.toHex(result.fields.pop())
+          verifyToken(identityKey, result.lockingPublicKey, result.fields, signature)
 
           outputsToAdmit.push(i)
         } catch (error) {

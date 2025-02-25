@@ -1,7 +1,6 @@
 import { LookupService, LookupQuestion, LookupAnswer, LookupFormula } from '@bsv/overlay'
 import { SLAPStorage } from './SLAPStorage.js'
-import { Script } from '@bsv/sdk'
-import pushdrop from 'pushdrop'
+import { Script, PushDrop, Utils } from '@bsv/sdk'
 import { SLAPQuery } from 'src/types.js'
 import { getDocumentation } from '../utils/getDocumentation.js'
 
@@ -24,19 +23,12 @@ export class SLAPLookupService implements LookupService {
    */
   async outputAdded?(txid: string, outputIndex: number, outputScript: Script, topic: string): Promise<void> {
     if (topic !== 'tm_slap') return
-
-    const result = pushdrop.decode({
-      script: outputScript.toHex(),
-      fieldFormat: 'buffer'
-    })
-
-    const protocol = result.fields[0].toString()
-    const identityKey = result.fields[1].toString('hex')
-    const domain = result.fields[2].toString()
-    const service = result.fields[3].toString()
-
+    const result = PushDrop.decode(outputScript)
+    const protocol = Utils.toUTF8(result.fields[0])
+    const identityKey = Utils.toHex(result.fields[1])
+    const domain = Utils.toUTF8(result.fields[2])
+    const service = Utils.toUTF8(result.fields[3])
     if (protocol !== 'SLAP') return
-
     await this.storage.storeSLAPRecord(txid, outputIndex, identityKey, domain, service)
   }
 

@@ -12,13 +12,12 @@ import { PublicKey, Signature } from '@bsv/sdk'
  */
 export const verifyToken = (
   identityKey: string,
-  lockingPublicKey: string,
-  fields: Buffer[],
+  lockingPublicKey: PublicKey,
+  fields: number[][],
   signature: string
 ): void => {
-  const pubKey = PublicKey.fromString(lockingPublicKey)
-  const hasValidSignature = pubKey.verify(
-    Array.from(Buffer.concat(fields)),
+  const hasValidSignature = lockingPublicKey.verify(
+    fields.reduce((a, e) => [...a, ...e], []),
     Signature.fromDER(signature, 'hex')
   )
 
