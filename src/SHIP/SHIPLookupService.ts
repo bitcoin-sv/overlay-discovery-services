@@ -2,7 +2,7 @@ import { LookupService, LookupQuestion, LookupAnswer, LookupFormula } from '@bsv
 import { SHIPStorage } from './SHIPStorage.js'
 import { Script, PushDrop, Utils } from '@bsv/sdk'
 import { SHIPQuery } from 'src/types.js'
-import { getDocumentation } from '../utils/getDocumentation.js'
+import SHIPLookupDocs from './SHIPLookup.docs.js'
 
 /**
  * Implements the SHIP lookup service
@@ -93,7 +93,7 @@ export class SHIPLookupService implements LookupService {
    * @returns A promise that resolves to the documentation string.
    */
   async getDocumentation(): Promise<string> {
-    return await getDocumentation('./docs/SHIP/ship-lookup-service.md')
+    return SHIPLookupDocs
   }
 
   /**

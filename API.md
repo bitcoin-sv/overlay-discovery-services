@@ -779,7 +779,7 @@ Implements the Advertiser interface for managing SHIP and SLAP advertisements us
 
 ```ts
 export class WalletAdvertiser implements Advertiser {
-    constructor(public chain: "main" | "test", public privateKey: string, public storageURL: string, public hostingDomain: string) 
+    constructor(public chain: "main" | "test", public privateKey: string, public storageURL: string, public advertisableURI: string) 
     async initWithEngine(engine: Engine): Promise<void> 
     async createAdvertisements(adsData: AdvertisementData[]): Promise<TaggedBEEF> 
     async findAllAdvertisements(protocol: "SHIP" | "SLAP"): Promise<Advertisement[]> 
@@ -797,7 +797,7 @@ export class WalletAdvertiser implements Advertiser {
 Constructs a new WalletAdvertiser instance.
 
 ```ts
-constructor(public chain: "main" | "test", public privateKey: string, public storageURL: string, public hostingDomain: string) 
+constructor(public chain: "main" | "test", public privateKey: string, public storageURL: string, public advertisableURI: string) 
 ```
 
 Argument Details
@@ -808,8 +808,8 @@ Argument Details
   + The private key used for signing transactions.
 + **storageURL**
   + The URL of the UTXO storage server for the Wallet.
-+ **hostingDomain**
-  + The base server URL where advertisements are made.
++ **advertisableURI**
+  + The advertisable URI where services are made available.
 
 #### Method createAdvertisements
 
@@ -911,45 +911,146 @@ Links: [API](#api), [Interfaces](#interfaces), [Classes](#classes), [Variables](
 
 | |
 | --- |
-| [isValidDomain](#variable-isvaliddomain) |
-| [isValidServiceName](#variable-isvalidservicename) |
-| [verifyToken](#variable-verifytoken) |
+| [isAdvertisableURI](#variable-isadvertisableuri) |
+| [isTokenSignatureCorrectlyLinked](#variable-istokensignaturecorrectlylinked) |
+| [isValidTopicOrServiceName](#variable-isvalidtopicorservicename) |
 
 Links: [API](#api), [Interfaces](#interfaces), [Classes](#classes), [Variables](#variables)
 
 ---
 
-### Variable: isValidDomain
+### Variable: isAdvertisableURI
 
 ```ts
-isValidDomain = (domain: string): boolean => {
-    const domainRegex = /^(https?:\/\/)?((([a-zA-Z0-9-]+)\.)+([a-zA-Z]{2,})|localhost(:[0-9]+))(\/.*)?$/;
-    return domainRegex.test(domain);
+isAdvertisableURI = (uri: string): boolean => {
+    if (typeof uri !== "string" || uri.trim() === "")
+        return false;
+    const validateCustomHttpsURI = (uri: string, prefix: string): boolean => {
+        try {
+            const modifiedURI = uri.replace(prefix, "https://");
+            const parsed = new URL(modifiedURI);
+            if (parsed.hostname.toLowerCase() === "localhost")
+                return false;
+            if (parsed.pathname !== "/")
+                return false;
+            return true;
+        }
+        catch (e) {
+            return false;
+        }
+    };
+    if (uri.startsWith("https://")) {
+        return validateCustomHttpsURI(uri, "https://");
+    }
+    else if (uri.startsWith("https+bsvauth://")) {
+        return validateCustomHttpsURI(uri, "https+bsvauth://");
+    }
+    else if (uri.startsWith("https+bsvauth+smf://")) {
+        return validateCustomHttpsURI(uri, "https+bsvauth+smf://");
+    }
+    else if (uri.startsWith("https+bsvauth+scrypt-offchain://")) {
+        return validateCustomHttpsURI(uri, "https+bsvauth+scrypt-offchain://");
+    }
+    else if (uri.startsWith("https+rtt://")) {
+        return validateCustomHttpsURI(uri, "https+rtt://");
+    }
+    else if (uri.startsWith("wss://")) {
+        try {
+            const parsed = new URL(uri);
+            if (parsed.protocol !== "wss:")
+                return false;
+            if (parsed.hostname.toLowerCase() === "localhost")
+                return false;
+            return true;
+        }
+        catch (e) {
+            return false;
+        }
+    }
+    else if (uri.startsWith("js8c+bsvauth+smf:")) {
+        const queryIndex = uri.indexOf("?");
+        if (queryIndex === -1)
+            return false;
+        const queryStr = uri.substring(queryIndex);
+        const params = new URLSearchParams(queryStr);
+        const latStr = params.get("lat");
+        const longStr = params.get("long");
+        const freqStr = params.get("freq");
+        const radiusStr = params.get("radius");
+        if (!latStr || !longStr || !freqStr || !radiusStr)
+            return false;
+        const lat = parseFloat(latStr);
+        const lon = parseFloat(longStr);
+        if (isNaN(lat) || lat < -90 || lat > 90)
+            return false;
+        if (isNaN(lon) || lon < -180 || lon > 180)
+            return false;
+        const freqMatch = freqStr.match(/(\d+(\.\d+)?)/);
+        if (!freqMatch)
+            return false;
+        const freqVal = parseFloat(freqMatch[1]);
+        if (isNaN(freqVal) || freqVal <= 0)
+            return false;
+        const radiusMatch = radiusStr.match(/(\d+(\.\d+)?)/);
+        if (!radiusMatch)
+            return false;
+        const radiusVal = parseFloat(radiusMatch[1]);
+        if (isNaN(radiusVal) || radiusVal <= 0)
+            return false;
+        return true;
+    }
+    return false;
 }
 ```
 
 Links: [API](#api), [Interfaces](#interfaces), [Classes](#classes), [Variables](#variables)
 
 ---
-### Variable: isValidServiceName
+### Variable: isTokenSignatureCorrectlyLinked
 
 ```ts
-isValidServiceName = (service: string): boolean => {
-    const serviceRegex = /^(?!_)(?!.*__)[a-z_]{1,50}(?<!_)$/;
+isTokenSignatureCorrectlyLinked = async (lockingPublicKey: PublicKey, fields: number[][]): Promise<boolean> => {
+    const signature = fields.pop();
+    const protocolID: [
+        2,
+        string
+    ] = [2, Utils.toUTF8(fields[0]) === "SHIP" ? "service host interconnect" : "service lookup availability"];
+    const identityKey = Utils.toHex(fields[1]);
+    const data = fields.reduce((a, e) => [...a, ...e], []);
+    const anyoneWallet = new ProtoWallet("anyone");
+    try {
+        const { valid } = await anyoneWallet.verifySignature({
+            data,
+            signature,
+            counterparty: identityKey,
+            protocolID,
+            keyID: "1"
+        });
+        if (!valid) {
+            return false;
+        }
+    }
+    catch (e) {
+        return false;
+    }
+    const { publicKey: expectedLockingPublicKey } = await anyoneWallet.getPublicKey({
+        counterparty: identityKey,
+        protocolID,
+        keyID: "1"
+    });
+    return expectedLockingPublicKey === lockingPublicKey.toString();
+}
+```
+
+Links: [API](#api), [Interfaces](#interfaces), [Classes](#classes), [Variables](#variables)
+
+---
+### Variable: isValidTopicOrServiceName
+
+```ts
+isValidTopicOrServiceName = (service: string): boolean => {
+    const serviceRegex = /^(?=.{1,50}$)(?:tm_|ls_)[a-z]+(?:_[a-z]+)*$/;
     return serviceRegex.test(service);
-}
-```
-
-Links: [API](#api), [Interfaces](#interfaces), [Classes](#classes), [Variables](#variables)
-
----
-### Variable: verifyToken
-
-```ts
-verifyToken = (identityKey: string, lockingPublicKey: PublicKey, fields: number[][], signature: string): void => {
-    const hasValidSignature = lockingPublicKey.verify(fields.reduce((a, e) => [...a, ...e], []), Signature.fromDER(signature, "hex"));
-    if (!hasValidSignature)
-        throw new Error("Invalid signature!");
 }
 ```
 
