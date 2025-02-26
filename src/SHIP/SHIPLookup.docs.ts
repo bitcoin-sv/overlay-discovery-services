@@ -33,7 +33,7 @@ When you call \`lookup(question)\` on the SHIP Lookup Service, you must include:
      \`\`\`ts
      interface SHIPQuery {
        domain?: string
-       topics?: string[] // or a single string in some implementations
+       topics?: string[]
      }
      \`\`\`
      where:
@@ -83,27 +83,12 @@ When you call \`lookup(question)\` on the SHIP Lookup Service, you must include:
 
 ---
 
-## Return Value
-
-The lookup returns a promise that resolves with either:
-- A **LookupAnswer** (likely an array of records), or
-- A **LookupFormula** (if advanced transformations are desired).
-
-The shape of each record is determined by your \`SHIPStorage\` implementation. Typically, it includes:
-- \`txid\`
-- \`outputIndex\`
-- \`identityKey\` (hex)
-- \`advertisedURI\` (string)
-- \`topic\` (string)
-
----
-
 ## Gotchas and Tips
 
 - **Topic Prefix**: The SHIP manager expects topics to start with \`tm_\`. If you see no results, ensure you used the correct prefix.
-- **Mismatched Domain**: Domain vs. Advertised URI might differ in actual usage. Check the raw data if queries aren’t matching.
+- **Strict Matching**: Domain matching requires an exact string match. If you have a different protocol (https vs https+bsvauth vs https+bsvauth+smf), be sure to store/lookup accordingly.
 - **Partial Queries**: If you only provide \`topics\`, domain-based filtering is not applied, and vice versa.
-- **Multiple Topics**: If \`topics\` is an array, the storage might return all records matching **any** listed topic. Confirm your \`storage.findRecord()\` logic for how it interprets multiple topics.
+- **Multiple Topics**: Since \`topics\` is an array, the storage will return all records matching **any** listed topic.
 
 ---
 
@@ -112,5 +97,4 @@ The shape of each record is determined by your \`SHIPStorage\` implementation. T
 - **SHIPTopicManager**: For how the outputs are admitted.
 - **BRC-101 Overlays**: The general pattern for these sorts of services.
 - **SLAP**: The complementary protocol for service lookup availability ads.
-
 `

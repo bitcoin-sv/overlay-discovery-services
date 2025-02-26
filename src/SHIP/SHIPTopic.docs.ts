@@ -19,7 +19,7 @@ A **SHIP token** (in the context of BRC-101 overlays) is a UTXO containing infor
 - **Connect**: By publishing a SHIP output, a node indicates it offers some service or is a participant in a specific overlay "topic."
 - **Authorize**: The SHIP token includes a signature which binds it to an identity key, ensuring authenticity and preventing impersonation.
 
-This allows other nodes to discover hosts by scanning the blockchain for valid SHIP tokens.
+This allows other nodes to discover hosts by querying the lookup service for valid SHIP tokens.
 
 ---
 
@@ -27,25 +27,21 @@ This allows other nodes to discover hosts by scanning the blockchain for valid S
 
 1. **PushDrop Fields**: Exactly five fields must be present:
    1. \`"SHIP"\` — The protocol identifier string.
-   2. \`identityKey\` — The 32-byte public key (in hex) that claims to own this UTXO.
-   3. \`advertisedURI\` — A URI string describing how or where to connect (see [\`isAdvertisableURI\`](./isAdvertisableURI.js)).
+   2. \`identityKey\` — The 33-byte compressed DER secp256k1 public key that claims to own this UTXO.
+   3. \`advertisedURI\` — A URI string describing how or where to connect (see BRC-101).
    4. \`topic\` — A string that identifies the topic. Must:
       - Start with \`tm_\`
-      - Pass the [\`isValidTopicOrServiceName\`](./isValidTopicOrServiceName.js) check
-   5. \`signature\` — A valid signature (in raw bytes) proving that \`identityKey\` is authorizing this output.
+      - Pass the BRC-87 checks
+   5. \`signature\` — A valid signature (in DER) proving that \`identityKey\` is authorizing this output, in conjunction with the PushDrop locking key.
 
 2. **Signature Verification**:  
    - The signature in the last field must be valid for the data in the first 4 fields.
    - It must match the identity key, which in turn must match the locking public key used in the output script.  
-   - See [\`isTokenSignatureCorrectlyLinked\`](./isTokenSignatureCorrectlyLinked.js) for the implementation details.
+   - See the code in \`isTokenSignatureCorrectlyLinked\` for the implementation details.
 
 3. **Advertised URI**:  
-   - Must pass [\`isAdvertisableURI\`](./isAdvertisableURI.js), which enforces certain URI formats (e.g., \`https://\`, \`wss://\`, or custom prefixed \`https+\` URIs).
+   - Must align with what is contemplated in BRC-101, which enforces certain URI formats (e.g., \`https://\`, \`wss://\`, or custom prefixed \`https+bsvauth...\` URIs).
    - No \`localhost\` or invalid URIs allowed.
-
-4. **Topic Name**:  
-   - Must be a valid name recognized by [\`isValidTopicOrServiceName\`](./isValidTopicOrServiceName.js).
-   - Must begin with \`tm_\` for SHIP.
 
 If any of these checks fail, the SHIP token output is _not_ admitted by the topic manager.
 
@@ -57,31 +53,5 @@ If any of these checks fail, the SHIP token output is _not_ admitted by the topi
 - **Exact Five Fields**: More or fewer fields will cause the manager to skip the output.
 - **Proper Locking Script**: Ensure the output is locked with a valid [PushDrop](https://www.npmjs.com/package/@bsv/sdk#pushdrop) format. If the \`lockingScript\` can’t be decoded by \`PushDrop\`, the output is invalid.
 - **Signature Data**: The signature is a raw ECDSA signature over the raw bytes of the preceding fields. The manager expects that the identity key and signature match up with the logic in \`isTokenSignatureCorrectlyLinked\`.
-- **Funding**: Remember to fund your SHIP output with enough satoshis so it remains unspent if you want your advertisement to stay valid.
-
----
-
-## How to Create a Valid SHIP Transaction
-
-1. Generate or have an identity key (public/private key pair).
-2. Collect the 4 data fields:
-   - \`"SHIP"\`
-   - \`identityKey\` in hex
-   - \`advertisedURI\`
-   - \`topic\` (must start with \`tm_\`)
-3. Generate a signature over these 4 fields with your identity key.
-4. Use \`PushDrop.encode([field1, field2, field3, field4, signature])\` to produce your locking script.
-5. Include this output in your transaction with some non-zero satoshi value.
-6. Broadcast the transaction. Once mined, the output is now discoverable via the SHIP topic manager.
-
----
-
-## Further Reading
-
-- **[BRC-101 Overlays](https://bitcoinschema.org/)**: For general overlay design patterns.
-- **[@bsv/sdk PushDrop Docs](https://www.npmjs.com/package/@bsv/sdk#pushdrop)**: For how to encode data fields into a script.
-- **[isAdvertisableURI.js](./isAdvertisableURI.js)**: For the rules on which URIs are valid.
-- **[isTokenSignatureCorrectlyLinked.js](./isTokenSignatureCorrectlyLinked.js)**: For signature verification.
-- **[isValidTopicOrServiceName.js](./isValidTopicOrServiceName.js)**: For topic/service name validation.
-
+- **Funding**: Remember to fund your SHIP output with at least one satoshi so it remains unspent if you want your advertisement to be valid.
 `

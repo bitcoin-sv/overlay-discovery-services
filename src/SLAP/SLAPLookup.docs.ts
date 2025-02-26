@@ -34,7 +34,7 @@ You will typically provide a [LookupQuestion](https://www.npmjs.com/package/@bsv
      service?: string
    }
    \`\`\`
-   - \`domain\`: Optional. If provided, only returns records whose \`advertisedURI\` matches this domain (exact or partial matching depends on your storage implementation).
+   - \`domain\`: Optional. If provided, only returns records whose \`advertisedURI\` matches this domain.
    - \`service\`: Optional. Must be a string starting with \`ls_\`.
 
 ### Example Usages
@@ -57,7 +57,7 @@ You will typically provide a [LookupQuestion](https://www.npmjs.com/package/@bsv
    const answers = await overlayClient.lookup(question)
    \`\`\`
 
-3. **Find by service**:
+3. **Find by service (most common)**:
    \`\`\`js
    const question = {
      service: 'ls_slap',
@@ -80,28 +80,15 @@ You will typically provide a [LookupQuestion](https://www.npmjs.com/package/@bsv
 
 ---
 
-## Return Value
-
-- Returns a **LookupAnswer** (commonly an array of records) or a **LookupFormula**.
-- Each record typically includes:
-  - \`txid\`
-  - \`outputIndex\`
-  - \`identityKey\` (in hex)
-  - \`domain\` (or \`advertisedURI\`)
-  - \`service\` (the \`ls_\` service name)
-
----
-
 ## Gotchas
 
-- **Strict Matching**: Depending on your storage implementation, domain matching may require an exact string match. If you have a subpath or different port, be sure to store/lookup accordingly.
+- **Strict Matching**: Domain matching requires an exact string match. If you have a different protocol (https vs https+bsvauth vs https+bsvauth+smf), be sure to store/lookup accordingly.
 - **Must Start with \`ls_\`**: The \`service\` field in the original SLAP advertisement must begin with \`ls_\`. If you query for something that doesn’t match exactly, you may get zero results.
-- **Record Lifecycle**: UTXOs can be spent. When spent, the record is removed (or flagged) by the manager’s \`outputSpent\` or \`outputDeleted\` handlers.
 
 ---
 
 ## Further Reading
 
 - **SLAPTopicManager**: Learn how SLAP outputs are detected and admitted.
-- **BRC-101 Overlays**: The higher-level specification for modular overlay protocols.
+- **BRC-101 Overlays**: The higher-level specification for modular overlay availability schemes.
 `
