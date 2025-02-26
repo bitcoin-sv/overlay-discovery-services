@@ -8,8 +8,8 @@ export * from './src/SLAP/SLAPTopicManager.js'
 
 export * from './src/WalletAdvertiser.js'
 
-export * from './src/utils/isValidDomain.js'
-export * from './src/utils/isValidServiceName.js'
-export * from './src/utils/verifyToken.js'
+export * from './src/utils/isAdvertisableURI.js'
+export * from './src/utils/isValidTopicOrServiceName.js'
+export * from './src/utils/isTokenSignatureCorrectlyLinked.js'
 
 export * from './src/types.js'

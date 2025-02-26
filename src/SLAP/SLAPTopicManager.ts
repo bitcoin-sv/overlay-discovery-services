@@ -1,8 +1,9 @@
 import { AdmittanceInstructions, TopicManager } from '@bsv/overlay'
 import { Transaction, PushDrop, Utils } from '@bsv/sdk'
-import { verifyToken } from '../utils/verifyToken.js'
-import { isValidServiceName } from '../utils/isValidServiceName.js'
-import { getDocumentation } from '../utils/getDocumentation.js'
+import { isTokenSignatureCorrectlyLinked } from '../utils/isTokenSignatureCorrectlyLinked.js'
+import { isValidTopicOrServiceName } from '../utils/isValidTopicOrServiceName.js'
+import { isAdvertisableURI } from '../utils/isAdvertisableURI.js'
+import SLAPTopicDocs from './SLAPTopic.docs.js'
 
 /**
  * 🤚 SLAP Topic Manager
@@ -29,27 +30,18 @@ export class SLAPTopicManager implements TopicManager {
       for (const [i, output] of parsedTransaction.outputs.entries()) {
         try {
           const result = PushDrop.decode(output.lockingScript)
+          if (result.fields.length !== 5) continue // SLAP tokens have 5 fields
 
-          if (result.fields.length !== 4) continue // SLAP tokens should have 4 fields
+          const shipIdentifier = Utils.toUTF8(result.fields[0])
+          if (shipIdentifier !== 'SLAP') continue // SLAP identifier must be present
 
-          const slapIdentifier = Utils.toUTF8(result.fields[0])
-          const identityKey = Utils.toHex(result.fields[1])
-          // const domain = result.fields[2].toString()
-          const service = Utils.toUTF8(result.fields[3])
-          if (slapIdentifier !== 'SLAP') continue
+          const advertisedURI = Utils.toUTF8(result.fields[2])
+          if (!isAdvertisableURI(advertisedURI)) continue // Advertised URI must be acceptable
 
-          // Validate domain and service
-          // if (isValidDomain(domain) !== true) continue
-          if (!isValidServiceName(service)) continue
-
-          // Verify the token locking key and signature
-          const signature = Utils.toHex(result.fields.pop())
-          verifyToken(
-            identityKey,
-            result.lockingPublicKey,
-            result.fields,
-            signature
-          )
+          const topic = Utils.toUTF8(result.fields[3])
+          if (!isValidTopicOrServiceName(topic)) continue // Topic or service name must be valid
+          if (!topic.startsWith('ls_')) continue // SLAP only accepts "ls_" (lookup service) advertisements
+          if (!isTokenSignatureCorrectlyLinked(result.lockingPublicKey, result.fields)) continue // Signatures must be properly linked
 
           outputsToAdmit.push(i)
         } catch (error) {
@@ -88,7 +80,7 @@ export class SLAPTopicManager implements TopicManager {
    * @returns A promise that resolves to the documentation string.
    */
   async getDocumentation(): Promise<string> {
-    return await getDocumentation('./docs/SLAP/slap-lookup-service.md')
+    return SLAPTopicDocs
   }
 
   /**

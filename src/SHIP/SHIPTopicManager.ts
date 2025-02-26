@@ -1,8 +1,9 @@
 import { AdmittanceInstructions, TopicManager } from '@bsv/overlay'
 import { Transaction, PushDrop, Utils } from '@bsv/sdk'
-import { verifyToken } from '../utils/verifyToken.js'
-import { isValidDomain } from '../utils/isValidDomain.js'
-import { getDocumentation } from '../utils/getDocumentation.js'
+import { isTokenSignatureCorrectlyLinked } from '../utils/isTokenSignatureCorrectlyLinked.js'
+import { isAdvertisableURI } from '../utils/isAdvertisableURI.js'
+import SHIPTopicDocs from './SHIPTopic.docs.js'
+import { isValidTopicOrServiceName } from '../utils/isValidTopicOrServiceName.js'
 
 /**
  * 🚢 SHIP Topic Manager
@@ -26,22 +27,18 @@ export class SHIPTopicManager implements TopicManager {
       for (const [i, output] of parsedTransaction.outputs.entries()) {
         try {
           const result = PushDrop.decode(output.lockingScript)
-          if (result.fields.length !== 4) continue // SHIP tokens should have 4 fields
+          if (result.fields.length !== 5) continue // SHIP tokens have 5 fields
 
           const shipIdentifier = Utils.toUTF8(result.fields[0])
-          const identityKey = Utils.toHex(result.fields[1])
-          const domain = Utils.toUTF8(result.fields[2])
-          // const topic = result.fields[3].toString()
+          if (shipIdentifier !== 'SHIP') continue // SHIP identifier must be present
 
-          if (shipIdentifier !== 'SHIP') continue
+          const advertisedURI = Utils.toUTF8(result.fields[2])
+          if (!isAdvertisableURI(advertisedURI)) continue // Advertised URI must be acceptable
 
-          // Validate domain
-          if (!isValidDomain(domain)) continue
-          // Additional validations can be added here
-
-          // Verify the token locking key and signature
-          const signature = Utils.toHex(result.fields.pop())
-          verifyToken(identityKey, result.lockingPublicKey, result.fields, signature)
+          const topic = Utils.toUTF8(result.fields[3])
+          if (!isValidTopicOrServiceName(topic)) continue // Topic or service name must be valid
+          if (!topic.startsWith('tm_')) continue // SHIP only accepts "tm_" (topic manager) advertisements
+          if (!isTokenSignatureCorrectlyLinked(result.lockingPublicKey, result.fields)) continue // Signatures must be properly linked
 
           outputsToAdmit.push(i)
         } catch (error) {
@@ -79,7 +76,7 @@ export class SHIPTopicManager implements TopicManager {
    * @returns A promise that resolves to the documentation string.
    */
   async getDocumentation(): Promise<string> {
-    return await getDocumentation('./docs/SHIP/ship-lookup-service.md')
+    return SHIPTopicDocs
   }
 
   /**

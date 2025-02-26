@@ -1,6 +1,8 @@
 import { Transaction, Script, PublicKey, PrivateKey, WalletInterface, KeyDeriver, PushDrop, TaggedBEEF, Utils, Beef, CreateActionInput, SignActionSpend } from '@bsv/sdk'
 import { Advertisement, Engine, AdvertisementData, Advertiser } from '@bsv/overlay'
 import { Wallet, WalletSigner, WalletStorageManager, StorageClient, Services } from '@bsv/wallet-toolbox-client'
+import { isAdvertisableURI } from './utils/isAdvertisableURI.js'
+import { isValidTopicOrServiceName } from './utils/isValidTopicOrServiceName.js'
 
 const AD_TOKEN_VALUE = 1
 
@@ -18,14 +20,17 @@ export class WalletAdvertiser implements Advertiser {
    * @param chain - The blockchain (main or test) where this advertiser is advertising
    * @param privateKey - The private key used for signing transactions.
    * @param storageURL - The URL of the UTXO storage server for the Wallet.
-   * @param hostingDomain - The base server URL where advertisements are made.
+   * @param advertisableURI - The advertisable URI where services are made available.
    */
   constructor(
     public chain: 'main' | 'test',
     public privateKey: string,
     public storageURL: string,
-    public hostingDomain: string
+    public advertisableURI: string
   ) {
+    if (!isAdvertisableURI(advertisableURI)) {
+      throw new Error(`Refusing to initialize with non-advertisable URI: ${advertisableURI}`)
+    }
     const keyDeriver = new KeyDeriver(new PrivateKey(privateKey, 'hex'))
     const storageManager = new WalletStorageManager(keyDeriver.identityKey)
     const signer = new WalletSigner(chain, keyDeriver, storageManager)
@@ -70,16 +75,20 @@ export class WalletAdvertiser implements Advertiser {
     const pushdrop = new PushDrop(this.wallet)
     const { publicKey: identityKey } = await this.wallet.getPublicKey({ identityKey: true })
     const outputs = await Promise.all(adsData.map(async (ad) => {
+      if (!isValidTopicOrServiceName(ad.topicOrServiceName)) {
+        throw new Error(`Refusing to create ${ad.protocol} advertisement with invalid topic or service name: ${ad.topicOrServiceName}`)
+      }
       const lockingScript = await pushdrop.lock(
         [
-          Utils.toArray(ad.protocol),
+          Utils.toArray(ad.protocol, 'utf8'),
           Utils.toArray(identityKey, 'hex'),
-          Utils.toArray(this.hostingDomain),
-          Utils.toArray(ad.topicOrServiceName)
+          Utils.toArray(this.advertisableURI, 'utf8'),
+          Utils.toArray(ad.topicOrServiceName, 'utf8')
         ],
-        [2, ad.protocol],
+        [2, ad.protocol === 'SHIP' ? 'service host interconnect' : 'service lookup availability'],
         '1',
-        'self'
+        'anyone',
+        true
       )
 
       return {
@@ -94,7 +103,7 @@ export class WalletAdvertiser implements Advertiser {
       description: 'SHIP/SLAP Advertisement Issuance',
     })
 
-    const beef = tx.tx as number[]
+    const beef = Transaction.fromAtomicBEEF(tx.tx).toBEEF()
 
     return {
       beef,
@@ -185,7 +194,11 @@ export class WalletAdvertiser implements Advertiser {
     // Sign the inputs now that wwe have the transaction
     for (let i = 0; i < advertisements.length; i++) {
       const advertisement = advertisements[i]
-      const unlocker = pushdrop.unlock([2, advertisement.protocol], '1', 'self')
+      const unlocker = pushdrop.unlock(
+        [2, advertisement.protocol === 'SHIP' ? 'service host interconnect' : 'service lookup availability'],
+        '1',
+        'self'
+      )
       const unlockingScript = await unlocker.sign(signableTx, i)
       spends[i] = { unlockingScript: unlockingScript.toHex() }
     }
@@ -196,7 +209,7 @@ export class WalletAdvertiser implements Advertiser {
     })
 
     return {
-      beef: revokeTx.tx,
+      beef: Transaction.fromAtomicBEEF(revokeTx.tx).toBEEF(),
       topics: [...new Set(advertisements.map(ad => ad.protocol === 'SHIP' ? 'tm_ship' : 'tm_slap'))]
     }
   }

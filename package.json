@@ -1,6 +1,6 @@
 {
   "name": "@bsv/overlay-discovery-services",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "BSV Blockchain Overlay Services Engine",
   "main": "dist/cjs/mod.js",
@@ -33,8 +33,7 @@
     "build": "tsc -b && tsconfig-to-dual-package tsconfig.cjs.json",
     "dev": "tsc -b -w",
     "prepublish": "npm run build",
-    "doc": "ts2md --inputFilename=mod.ts --outputFilename=API.md --filenameSubstring=API --firstHeadingLevel=1",
-    "generate-service-docs": "node ./dist/cjs/src/utils/generateDocs.js"
+    "doc": "ts2md --inputFilename=mod.ts --outputFilename=API.md --filenameSubstring=API --firstHeadingLevel=1"
   },
   "repository": {
     "type": "git",

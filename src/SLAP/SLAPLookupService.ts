@@ -2,7 +2,7 @@ import { LookupService, LookupQuestion, LookupAnswer, LookupFormula } from '@bsv
 import { SLAPStorage } from './SLAPStorage.js'
 import { Script, PushDrop, Utils } from '@bsv/sdk'
 import { SLAPQuery } from 'src/types.js'
-import { getDocumentation } from '../utils/getDocumentation.js'
+import SLAPLookupDocs from './SLAPLookup.docs.js'
 
 /**
  * Implements the SLAP lookup service
@@ -91,7 +91,7 @@ export class SLAPLookupService implements LookupService {
    * @returns A promise that resolves to the documentation string.
    */
   async getDocumentation(): Promise<string> {
-    return await getDocumentation('./docs/SLAP/slap-lookup-service.md')
+    return SLAPLookupDocs
   }
 
   /**
