@@ -22,6 +22,7 @@ Links: [API](#api), [Interfaces](#interfaces), [Classes](#classes), [Variables](
 export interface SHIPQuery {
     domain?: string;
     topics?: string[];
+    identityKey?: string;
 }
 ```
 
@@ -50,6 +51,7 @@ Links: [API](#api), [Interfaces](#interfaces), [Classes](#classes), [Variables](
 export interface SLAPQuery {
     domain?: string;
     service?: string;
+    identityKey?: string;
 }
 ```
 
@@ -246,15 +248,12 @@ export class SHIPStorage {
     async ensureIndexes(): Promise<void> 
     async storeSHIPRecord(txid: string, outputIndex: number, identityKey: string, domain: string, topic: string): Promise<void> 
     async deleteSHIPRecord(txid: string, outputIndex: number): Promise<void> 
-    async findRecord(query: {
-        domain?: string;
-        topics?: string[];
-    }): Promise<UTXOReference[]> 
+    async findRecord(query: SHIPQuery): Promise<UTXOReference[]> 
     async findAll(): Promise<UTXOReference[]> 
 }
 ```
 
-See also: [UTXOReference](#interface-utxoreference)
+See also: [SHIPQuery](#interface-shipquery), [UTXOReference](#interface-utxoreference)
 
 <details>
 
@@ -314,12 +313,9 @@ returns matching UTXO references
 Finds SHIP records based on a given query object.
 
 ```ts
-async findRecord(query: {
-    domain?: string;
-    topics?: string[];
-}): Promise<UTXOReference[]> 
+async findRecord(query: SHIPQuery): Promise<UTXOReference[]> 
 ```
-See also: [UTXOReference](#interface-utxoreference)
+See also: [SHIPQuery](#interface-shipquery), [UTXOReference](#interface-utxoreference)
 
 Returns
 
@@ -328,7 +324,7 @@ Returns matching UTXO references.
 Argument Details
 
 + **query**
-  + The query object which may contain properties for domain or topics.
+  + The query object which may contain properties for domain, topics, and/or identityKey.
 
 #### Method storeSHIPRecord
 
@@ -583,15 +579,12 @@ export class SLAPStorage {
     async ensureIndexes(): Promise<void> 
     async storeSLAPRecord(txid: string, outputIndex: number, identityKey: string, domain: string, service: string): Promise<void> 
     async deleteSLAPRecord(txid: string, outputIndex: number): Promise<void> 
-    async findRecord(query: {
-        domain?: string;
-        service?: string;
-    }): Promise<UTXOReference[]> 
+    async findRecord(query: SLAPQuery): Promise<UTXOReference[]> 
     async findAll(): Promise<UTXOReference[]> 
 }
 ```
 
-See also: [UTXOReference](#interface-utxoreference)
+See also: [SLAPQuery](#interface-slapquery), [UTXOReference](#interface-utxoreference)
 
 <details>
 
@@ -651,12 +644,9 @@ returns matching UTXO references
 Finds SLAP records based on a given query object.
 
 ```ts
-async findRecord(query: {
-    domain?: string;
-    service?: string;
-}): Promise<UTXOReference[]> 
+async findRecord(query: SLAPQuery): Promise<UTXOReference[]> 
 ```
-See also: [UTXOReference](#interface-utxoreference)
+See also: [SLAPQuery](#interface-slapquery), [UTXOReference](#interface-utxoreference)
 
 Returns
 
@@ -665,7 +655,7 @@ returns matching UTXO references
 Argument Details
 
 + **query**
-  + The query object which may contain properties for domain or service.
+  + The query object which may contain properties for domain, service, and/or identityKey.
 
 #### Method storeSLAPRecord
 
@@ -834,7 +824,7 @@ Will throw an error if the locking key is invalid.
 
 #### Method findAllAdvertisements
 
-Finds all SHIP advertisements for a given topic.
+Finds all SHIP or SLAP advertisements for a given topic created by this identity.
 
 ```ts
 async findAllAdvertisements(protocol: "SHIP" | "SLAP"): Promise<Advertisement[]> 
@@ -842,12 +832,12 @@ async findAllAdvertisements(protocol: "SHIP" | "SLAP"): Promise<Advertisement[]>
 
 Returns
 
-A promise that resolves to an array of SHIP advertisements.
+A promise that resolves to an array of advertisements.
 
 Argument Details
 
 + **topic**
-  + The topic name to search for.
+  + Whether SHIP or SLAP advertisements should be returned.
 
 #### Method initWithEngine
 

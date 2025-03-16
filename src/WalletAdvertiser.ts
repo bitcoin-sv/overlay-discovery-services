@@ -75,7 +75,6 @@ export class WalletAdvertiser implements Advertiser {
       throw new Error('Initialize the Advertiser using initWithEngine() before use.')
     }
     const pushdrop = new PushDrop(this.wallet)
-    const { publicKey: identityKey } = await this.wallet.getPublicKey({ identityKey: true })
     const outputs = await Promise.all(adsData.map(async (ad) => {
       if (!isValidTopicOrServiceName(ad.topicOrServiceName)) {
         throw new Error(`Refusing to create ${ad.protocol} advertisement with invalid topic or service name: ${ad.topicOrServiceName}`)
@@ -83,7 +82,7 @@ export class WalletAdvertiser implements Advertiser {
       const lockingScript = await pushdrop.lock(
         [
           Utils.toArray(ad.protocol, 'utf8'),
-          Utils.toArray(identityKey, 'hex'),
+          Utils.toArray(this.identityKey, 'hex'),
           Utils.toArray(this.advertisableURI, 'utf8'),
           Utils.toArray(ad.topicOrServiceName, 'utf8')
         ],
@@ -102,7 +101,7 @@ export class WalletAdvertiser implements Advertiser {
 
     const tx = await this.wallet.createAction({
       outputs,
-      description: 'SHIP/SLAP Advertisement Issuance',
+      description: 'SHIP/SLAP Advertisement Issuance'
     })
 
     const beef = Transaction.fromAtomicBEEF(tx.tx).toBEEF()
@@ -114,9 +113,9 @@ export class WalletAdvertiser implements Advertiser {
   }
 
   /**
-   * Finds all SHIP advertisements for a given topic.
-   * @param topic - The topic name to search for.
-   * @returns A promise that resolves to an array of SHIP advertisements.
+   * Finds all SHIP or SLAP advertisements for a given topic created by this identity.
+   * @param topic - Whether SHIP or SLAP advertisements should be returned.
+   * @returns A promise that resolves to an array of advertisements.
    */
   async findAllAdvertisements(protocol: 'SHIP' | 'SLAP'): Promise<Advertisement[]> {
     if (!this.initialized || this.engine === undefined) {
