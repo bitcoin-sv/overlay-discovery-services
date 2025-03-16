@@ -90,7 +90,7 @@ export class WalletAdvertiser implements Advertiser {
         'anyone',
         true
       )
-
+      console.log(`Creating advertisement for ${ad.topicOrServiceName} at ${this.advertisableURI}`)
       return {
         outputDescription: `${ad.protocol} advertisement of ${ad.topicOrServiceName}`,
         satoshis: AD_TOKEN_VALUE,
@@ -134,6 +134,7 @@ export class WalletAdvertiser implements Advertiser {
           const tx = Transaction.fromBEEF(output.beef)
           const advertisement = this.parseAdvertisement(tx.outputs[output.outputIndex].lockingScript)
           if (advertisement !== undefined && advertisement !== null && advertisement.protocol === protocol) {
+            console.log(`Found current advertisement of ${advertisement.topicOrService} at ${advertisement.domain}`)
             advertisements.push({
               ...advertisement,
               beef: output.beef,
@@ -178,6 +179,7 @@ export class WalletAdvertiser implements Advertiser {
         inputDescription: `Revoke a ${advertisement.protocol} advertisement for ${advertisement.topicOrService}`,
         unlockingScriptLength: 74 // Typical PushDrop signature length
       })
+      console.log(`Revoking advertisement ${adTxid}.${advertisement.outputIndex} for ${advertisement.topicOrService} at ${advertisement.domain}`)
     }
 
     // Create a new transaction that spends the SHIP or SLAP advertisement issuance token
@@ -197,7 +199,7 @@ export class WalletAdvertiser implements Advertiser {
       const unlocker = pushdrop.unlock(
         [2, advertisement.protocol === 'SHIP' ? 'service host interconnect' : 'service lookup availability'],
         '1',
-        'self'
+        'anyone'
       )
       const unlockingScript = await unlocker.sign(signableTx, i)
       spends[i] = { unlockingScript: unlockingScript.toHex() }
