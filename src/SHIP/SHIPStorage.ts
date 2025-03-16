@@ -1,5 +1,5 @@
 import { Collection, Db } from 'mongodb'
-import { SHIPRecord, UTXOReference } from '../types.js'
+import { SHIPQuery, SHIPRecord, UTXOReference } from '../types.js'
 
 /**
  * Implements a storage engine for SHIP protocol
@@ -52,20 +52,25 @@ export class SHIPStorage {
 
   /**
    * Finds SHIP records based on a given query object.
-   * @param {Object} query The query object which may contain properties for domain or topics.
+   * @param {Object} query The query object which may contain properties for domain, topics, and/or identityKey.
    * @returns {Promise<UTXOReference[]>} Returns matching UTXO references.
    */
-  async findRecord(query: { domain?: string; topics?: string[] }): Promise<UTXOReference[]> {
+  async findRecord(query: SHIPQuery): Promise<UTXOReference[]> {
     const mongoQuery: any = {}
 
     // Add domain to the query if provided
-    if (query.domain) {
+    if (typeof query.domain === 'string') {
       mongoQuery.domain = query.domain
     }
 
     // Add topics to the query if provided
-    if (query.topics && Array.isArray(query.topics)) {
+    if (Array.isArray(query.topics)) {
       mongoQuery.topic = { $in: query.topics }
+    }
+
+    // Add identityKey to the query if provided
+    if (typeof query.identityKey === 'string') {
+      mongoQuery.identityKey = query.identityKey
     }
 
     return await this.shipRecords

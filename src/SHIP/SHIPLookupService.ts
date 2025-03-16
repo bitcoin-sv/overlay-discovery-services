@@ -70,22 +70,18 @@ export class SHIPLookupService implements LookupService {
       return await this.storage.findAll()
     }
 
-    const { domain, topics } = question.query as SHIPQuery
-
     // Validate lookup query
-    if (domain !== undefined && domain !== null && topics !== undefined && topics !== null) {
-      // If both domain and topic are provided, construct a query with both
-      const records = await this.storage.findRecord({ domain, topics })
-      return records
-    } else if (domain !== undefined && domain !== null) {
-      const records = await this.storage.findRecord({ domain })
-      return records
-    } else if (topics !== undefined && topics !== null) {
-      const records = await this.storage.findRecord({ topics })
-      return records
-    } else {
-      throw new Error('A valid domain or topic must be provided in the query!')
+    const { domain, topics, identityKey } = question.query as SHIPQuery
+    if (typeof domain !== 'string' && typeof domain !== 'undefined') {
+      throw new Error('query.domain must be a string if provided')
     }
+    if (!Array.isArray(topics) && typeof topics !== 'undefined') {
+      throw new Error('query.topics must be an array of strings if provided')
+    }
+    if (typeof identityKey !== 'string' && typeof identityKey !== 'undefined') {
+      throw new Error('query.identityKey must be a string if provided')
+    }
+    return await this.storage.findRecord({ domain, topics, identityKey })
   }
 
   /**

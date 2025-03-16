@@ -71,19 +71,18 @@ export class SLAPLookupService implements LookupService {
       return await this.storage.findAll()
     }
 
-    const { domain, service } = question.query as SLAPQuery
-
     // Validate lookup query
-    if (domain !== undefined && domain !== null && service !== undefined && service !== null) {
-      // If both domain and service are provided, construct a query with both
-      return await this.storage.findRecord({ domain, service })
-    } else if (domain !== undefined && domain !== null) {
-      return await this.storage.findRecord({ domain })
-    } else if (service !== undefined && service !== null) {
-      return await this.storage.findRecord({ service })
-    } else {
-      throw new Error('A valid domain or service must be provided in the query!')
+    const { domain, service, identityKey } = question.query as SLAPQuery
+    if (typeof domain !== 'string' && typeof domain !== 'undefined') {
+      throw new Error('query.domain must be a string if provided')
     }
+    if (typeof service !== 'string' && typeof service !== 'undefined') {
+      throw new Error('query.service must be a string if provided')
+    }
+    if (typeof identityKey !== 'string' && typeof identityKey !== 'undefined') {
+      throw new Error('query.identityKey must be a string if provided')
+    }
+    return await this.storage.findRecord({ domain, service, identityKey })
   }
 
   /**

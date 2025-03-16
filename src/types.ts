@@ -24,9 +24,11 @@ export interface SLAPRecord {
 export interface SHIPQuery {
   domain?: string
   topics?: string[]
+  identityKey?: string
 }
 
 export interface SLAPQuery {
   domain?: string
   service?: string
+  identityKey?: string
 }

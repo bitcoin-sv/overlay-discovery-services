@@ -12,6 +12,7 @@ const AD_TOKEN_VALUE = 1
 export class WalletAdvertiser implements Advertiser {
   private readonly wallet: WalletInterface
   private readonly storageManager: WalletStorageManager
+  private readonly identityKey: string
   private initialized: boolean
   private engine: Engine | undefined
 
@@ -39,6 +40,7 @@ export class WalletAdvertiser implements Advertiser {
     this.initialized = false
     this.storageManager = storageManager
     this.wallet = wallet
+    this.identityKey = keyDeriver.identityKey
   }
 
   /**
@@ -123,7 +125,9 @@ export class WalletAdvertiser implements Advertiser {
     const advertisements: Advertisement[] = []
     const lookupAnswer = await this.engine.lookup({
       service: protocol === 'SHIP' ? 'ls_ship' : 'ls_slap',
-      query: 'findAll'
+      query: {
+        identityKey: this.identityKey
+      }
     })
 
     // Lookup will currently always return type output-list

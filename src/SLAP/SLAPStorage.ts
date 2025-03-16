@@ -1,5 +1,5 @@
 import { Collection, Db } from 'mongodb'
-import { SLAPRecord, UTXOReference } from 'src/types.js'
+import { SLAPQuery, SLAPRecord, UTXOReference } from 'src/types.js'
 
 /**
  * Implements a storage engine for SLAP protocol
@@ -52,10 +52,10 @@ export class SLAPStorage {
 
   /**
    * Finds SLAP records based on a given query object.
-   * @param {Object} query The query object which may contain properties for domain or service.
+   * @param {Object} query The query object which may contain properties for domain, service, and/or identityKey.
    * @returns {Promise<UTXOReference[]>} returns matching UTXO references
    */
-  async findRecord(query: { domain?: string, service?: string }): Promise<UTXOReference[]> {
+  async findRecord(query: SLAPQuery): Promise<UTXOReference[]> {
     return await this.slapRecords.find(query)
       .project<UTXOReference>({ txid: 1, outputIndex: 1 })
       .toArray()
