@@ -56,7 +56,25 @@ export class SLAPStorage {
    * @returns {Promise<UTXOReference[]>} returns matching UTXO references
    */
   async findRecord(query: SLAPQuery): Promise<UTXOReference[]> {
-    return await this.slapRecords.find(query)
+    const mongoQuery: any = {}
+
+    // Add domain to the query if provided
+    if (typeof query.domain === 'string') {
+      mongoQuery.domain = query.domain
+    }
+
+    // Add service to the query if provided
+    if (typeof query.service === 'string') {
+      mongoQuery.service = query.service
+    }
+
+    // Add identityKey to the query if provided
+    if (typeof query.identityKey === 'string') {
+      mongoQuery.identityKey = query.identityKey
+    }
+    console.log(mongoQuery)
+
+    return await this.slapRecords.find(mongoQuery)
       .project<UTXOReference>({ txid: 1, outputIndex: 1 })
       .toArray()
       .then(results => results.map(record => ({
