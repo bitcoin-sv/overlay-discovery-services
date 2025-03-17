@@ -82,7 +82,9 @@ export class SLAPLookupService implements LookupService {
     if (typeof identityKey !== 'string' && typeof identityKey !== 'undefined') {
       throw new Error('query.identityKey must be a string if provided')
     }
-    return await this.storage.findRecord({ domain, service, identityKey })
+    const result = await this.storage.findRecord({ domain, service, identityKey })
+    console.log('LOOKUP RESULT', result)
+    return result
   }
 
   /**
