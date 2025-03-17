@@ -73,16 +73,25 @@ export class SLAPLookupService implements LookupService {
 
     // Validate lookup query
     const { domain, service, identityKey } = question.query as SLAPQuery
-    if (typeof domain !== 'string' && typeof domain !== 'undefined') {
+
+    // Validate that provided values are strings.
+    if (domain !== undefined && typeof domain !== 'string') {
       throw new Error('query.domain must be a string if provided')
     }
-    if (typeof service !== 'string' && typeof service !== 'undefined') {
+    if (service !== undefined && typeof service !== 'string') {
       throw new Error('query.service must be a string if provided')
     }
-    if (typeof identityKey !== 'string' && typeof identityKey !== 'undefined') {
+    if (identityKey !== undefined && typeof identityKey !== 'string') {
       throw new Error('query.identityKey must be a string if provided')
     }
-    const result = await this.storage.findRecord({ domain, service, identityKey })
+
+    // Build the query object dynamically to omit any undefined values.
+    const query: Partial<SLAPQuery> = {}
+    if (domain !== undefined) query.domain = domain
+    if (service !== undefined) query.service = service
+    if (identityKey !== undefined) query.identityKey = identityKey
+
+    const result = await this.storage.findRecord(query)
     console.log('LOOKUP RESULT', result)
     return result
   }
