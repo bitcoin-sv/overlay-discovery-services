@@ -1,5 +1,5 @@
-import { Transaction, Script, PublicKey, PrivateKey, WalletInterface, KeyDeriver, PushDrop, TaggedBEEF, Utils, Beef, CreateActionInput, SignActionSpend } from '@bsv/sdk'
-import { Advertisement, Engine, AdvertisementData, Advertiser } from '@bsv/overlay'
+import { Transaction, Script, PrivateKey, WalletInterface, KeyDeriver, PushDrop, TaggedBEEF, Utils, Beef, CreateActionInput, SignActionSpend, LookupResolver, LookupResolverConfig } from '@bsv/sdk'
+import { Advertisement, AdvertisementData, Advertiser } from '@bsv/overlay'
 import { Wallet, WalletSigner, WalletStorageManager, StorageClient, Services } from '@bsv/wallet-toolbox-client'
 import { isAdvertisableURI } from './utils/isAdvertisableURI.js'
 import { isValidTopicOrServiceName } from './utils/isValidTopicOrServiceName.js'
@@ -14,7 +14,6 @@ export class WalletAdvertiser implements Advertiser {
   private readonly storageManager: WalletStorageManager
   private readonly identityKey: string
   private initialized: boolean
-  private engine: Engine | undefined
 
   /**
    * Constructs a new WalletAdvertiser instance.
@@ -22,12 +21,14 @@ export class WalletAdvertiser implements Advertiser {
    * @param privateKey - The private key used for signing transactions.
    * @param storageURL - The URL of the UTXO storage server for the Wallet.
    * @param advertisableURI - The advertisable URI where services are made available.
+   * @param lookupResolverConfig — If provided, overrides the resolver config used for lookups. Otherwise defaults to the network preset associated with the wallet's network.
    */
   constructor(
     public chain: 'main' | 'test',
     public privateKey: string,
     public storageURL: string,
-    public advertisableURI: string
+    public advertisableURI: string,
+    public lookupResolverConfig?: LookupResolverConfig
   ) {
     if (!isAdvertisableURI(advertisableURI)) {
       throw new Error(`Refusing to initialize with non-advertisable URI: ${advertisableURI}`)
@@ -44,21 +45,12 @@ export class WalletAdvertiser implements Advertiser {
   }
 
   /**
-   * Initializes the wallet asynchronously and binds the advertiser with its Engine.
-   * 
-   * Sets the Engine instance to be used by this WalletAdvertiser. This method allows for late
-   * binding of the Engine, thus avoiding circular dependencies during instantiation. The Engine
-   * provides necessary context with the relevant topic managers and lookup services,
-   * as well as the lookup function used for querying advertisements.
-   *
-   * @param engine The Engine instance to be associated with this NinjaAdvertiser. The Engine should
-   * be fully initialized before being passed to this method to ensure all functionalities are available.
+   * Initializes the wallet asynchronously.
    */
-  async initWithEngine(engine: Engine): Promise<void> {
+  async init(): Promise<void> {
     const client = new StorageClient(this.wallet, this.storageURL)
     await client.makeAvailable()
     await this.storageManager.addWalletStorageProvider(client)
-    this.engine = engine
     this.initialized = true
   }
 
@@ -72,7 +64,7 @@ export class WalletAdvertiser implements Advertiser {
     adsData: AdvertisementData[]
   ): Promise<TaggedBEEF> {
     if (!this.initialized) {
-      throw new Error('Initialize the Advertiser using initWithEngine() before use.')
+      throw new Error('Initialize the Advertiser using init() before use.')
     }
     const pushdrop = new PushDrop(this.wallet)
     const outputs = await Promise.all(adsData.map(async (ad) => {
@@ -118,11 +110,18 @@ export class WalletAdvertiser implements Advertiser {
    * @returns A promise that resolves to an array of advertisements.
    */
   async findAllAdvertisements(protocol: 'SHIP' | 'SLAP'): Promise<Advertisement[]> {
-    if (!this.initialized || this.engine === undefined) {
-      throw new Error('Initialize the Advertiser using initWithEngine() before use.')
+    if (!this.initialized) {
+      throw new Error('Initialize the Advertiser using init() before use.')
+    }
+    let resolver: LookupResolver
+    if (typeof this.lookupResolverConfig === 'object') {
+      resolver = new LookupResolver(this.lookupResolverConfig)
+    } else {
+      const { network } = await this.wallet.getNetwork({})
+      resolver = new LookupResolver({ networkPreset: network })
     }
     const advertisements: Advertisement[] = []
-    const lookupAnswer = await this.engine.lookup({
+    const lookupAnswer = await resolver.query({
       service: protocol === 'SHIP' ? 'ls_ship' : 'ls_slap',
       query: {
         identityKey: this.identityKey
@@ -163,7 +162,7 @@ export class WalletAdvertiser implements Advertiser {
       throw new Error('Must provide advertisements to revoke!')
     }
     if (!this.initialized) {
-      throw new Error('Initialize the Advertiser using initWithEngine() before use.')
+      throw new Error('Initialize the Advertiser using init() before use.')
     }
     const inputBeef = new Beef()
     const txInputs: CreateActionInput[] = []
