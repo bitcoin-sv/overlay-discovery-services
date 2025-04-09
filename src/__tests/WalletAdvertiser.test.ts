@@ -14,6 +14,7 @@ mockWallet.createAction = jest.fn(() => ({
     }
 })) as any
 mockWallet.signAction = jest.fn(() => ({ tx: new Transaction(2, [], [], 0).toAtomicBEEF() })) as any
+mockWallet.getNetwork = jest.fn(() => ({ network: 'mainnet' })) as any
 
 jest.mock('@bsv/wallet-toolbox-client', () => {
     return {
@@ -49,19 +50,10 @@ jest.mock('@bsv/wallet-toolbox-client', () => {
 describe('WalletAdvertiser', () => {
     let testPrivateKeyHex = ''
     let advertiser: WalletAdvertiser
-    let mockEngine: Engine
 
     beforeAll(() => {
         const testKey = new PrivateKey(42)
         testPrivateKeyHex = testKey.toHex()
-
-        // Mock an Engine that simply returns an empty 'output-list' whenever `lookup` is called.
-        mockEngine = {
-            lookup: jest.fn().mockResolvedValue({
-                type: 'output-list',
-                outputs: []
-            } as never),
-        } as any as Engine
     })
 
     describe('Constructor', () => {
@@ -83,16 +75,16 @@ describe('WalletAdvertiser', () => {
         })
     })
 
-    describe('initWithEngine', () => {
+    describe('init', () => {
         it('throws if used before init is called', async () => {
             // The advertiser is constructed but not yet initialized.
             await expect(advertiser.findAllAdvertisements('SHIP')).rejects.toThrow(
-                'Initialize the Advertiser using initWithEngine() before use.'
+                'Initialize the Advertiser using init() before use.'
             )
         })
 
-        it('initializes properly with a mocked Engine', async () => {
-            await expect(advertiser.initWithEngine(mockEngine)).resolves.not.toThrow()
+        it('initializes properly', async () => {
+            await expect(advertiser.init()).resolves.not.toThrow()
         })
     })
 
