@@ -121,13 +121,18 @@ export class WalletAdvertiser implements Advertiser {
       resolver = new LookupResolver({ networkPreset: network })
     }
     const advertisements: Advertisement[] = []
-    const lookupAnswer = await resolver.query({
-      service: protocol === 'SHIP' ? 'ls_ship' : 'ls_slap',
-      query: {
-        identityKey: this.identityKey
-      }
-    })
-
+    let lookupAnswer
+    try {
+      lookupAnswer = await resolver.query({
+        service: protocol === 'SHIP' ? 'ls_ship' : 'ls_slap',
+        query: {
+          identityKey: this.identityKey
+        }
+      })
+    } catch (e) {
+      console.warn(`Error finding ${protocol} advertisements`, e)
+      return advertisements
+    }
     // Lookup will currently always return type output-list
     if (lookupAnswer.type === 'output-list') {
       lookupAnswer.outputs.forEach(output => {
