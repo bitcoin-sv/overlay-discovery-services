@@ -1,6 +1,6 @@
-import { LookupService, LookupQuestion, LookupAnswer, LookupFormula } from '@bsv/overlay'
+import { LookupService, LookupQuestion, LookupAnswer, LookupFormula, AdmissionMode, OutputAdmittedByTopic, OutputSpent, SpendNotificationMode } from '@bsv/overlay'
+import { PushDrop, Utils } from '@bsv/sdk'
 import { SLAPStorage } from './SLAPStorage.js'
-import { Script, PushDrop, Utils } from '@bsv/sdk'
 import { SLAPQuery } from 'src/types.js'
 import SLAPLookupDocs from './SLAPLookup.docs.js'
 
@@ -12,18 +12,15 @@ import SLAPLookupDocs from './SLAPLookup.docs.js'
  * records for lookup purposes.
  */
 export class SLAPLookupService implements LookupService {
+  admissionMode: AdmissionMode = 'locking-script'
+  spendNotificationMode: SpendNotificationMode = 'none'
   constructor(public storage: SLAPStorage) { }
 
-  /**
-   * Handles the addition of a new output to the topic.
-   * @param txid - The transaction ID containing the output.
-   * @param outputIndex - The index of the output in the transaction.
-   * @param outputScript - The script of the output to be processed.
-   * @param topic - The topic associated with the output.
-   */
-  async outputAdded?(txid: string, outputIndex: number, outputScript: Script, topic: string): Promise<void> {
+  async outputAdmittedByTopic(payload: OutputAdmittedByTopic): Promise<void> {
+    if (payload.mode !== 'locking-script') throw new Error('Invalid mode')
+    const { txid, outputIndex, lockingScript, topic } = payload
     if (topic !== 'tm_slap') return
-    const result = PushDrop.decode(outputScript)
+    const result = PushDrop.decode(lockingScript)
     const protocol = Utils.toUTF8(result.fields[0])
     const identityKey = Utils.toHex(result.fields[1])
     const domain = Utils.toUTF8(result.fields[2])
@@ -32,33 +29,17 @@ export class SLAPLookupService implements LookupService {
     await this.storage.storeSLAPRecord(txid, outputIndex, identityKey, domain, service)
   }
 
-  /**
-   * Handles the spending of an output in the topic.
-   * @param txid - The transaction ID of the spent output.
-   * @param outputIndex - The index of the spent output.
-   * @param topic - The topic associated with the spent output.
-   */
-  async outputSpent?(txid: string, outputIndex: number, topic: string): Promise<void> {
+  async outputSpent(payload: OutputSpent): Promise<void> {
+    if (payload.mode !== 'none') throw new Error('Invalid payload')
+    const { topic, txid, outputIndex } = payload
     if (topic !== 'tm_slap') return
     await this.storage.deleteSLAPRecord(txid, outputIndex)
   }
 
-  /**
-   * Handles the deletion of an output in the topic.
-   * @param txid - The transaction ID of the deleted output.
-   * @param outputIndex - The index of the deleted output.
-   * @param topic - The topic associated with the deleted output.
-   */
-  async outputDeleted?(txid: string, outputIndex: number, topic: string): Promise<void> {
-    if (topic !== 'tm_slap') return
+  async outputEvicted (txid: string, outputIndex: number): Promise<void> {
     await this.storage.deleteSLAPRecord(txid, outputIndex)
   }
 
-  /**
-   * Answers a lookup query.
-   * @param question - The lookup question to be answered.
-   * @returns A promise that resolves to a lookup answer or formula.
-   */
   async lookup(question: LookupQuestion): Promise<LookupAnswer | LookupFormula> {
     if (question.query === undefined || question.query === null) {
       throw new Error('A valid query must be provided!')
@@ -96,18 +77,10 @@ export class SLAPLookupService implements LookupService {
     return result
   }
 
-  /**
-   * Returns documentation specific to this overlay lookup service.
-   * @returns A promise that resolves to the documentation string.
-   */
   async getDocumentation(): Promise<string> {
     return SLAPLookupDocs
   }
 
-  /**
-   * Returns metadata associated with this lookup service.
-   * @returns A promise that resolves to an object containing metadata.
-   */
   async getMetaData(): Promise<{
     name: string
     shortDescription: string
