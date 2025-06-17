@@ -39,7 +39,7 @@ export class SHIPLookupService implements LookupService {
     await this.storage.deleteSHIPRecord(txid, outputIndex)
   }
 
-  async lookup(question: LookupQuestion): Promise<LookupAnswer | LookupFormula> {
+  async lookup(question: LookupQuestion): Promise<LookupFormula> {
     if (question.query === undefined || question.query === null) {
       throw new Error('A valid query must be provided!')
     }

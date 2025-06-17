@@ -40,7 +40,7 @@ export class SLAPLookupService implements LookupService {
     await this.storage.deleteSLAPRecord(txid, outputIndex)
   }
 
-  async lookup(question: LookupQuestion): Promise<LookupAnswer | LookupFormula> {
+  async lookup(question: LookupQuestion): Promise<LookupFormula> {
     if (question.query === undefined || question.query === null) {
       throw new Error('A valid query must be provided!')
     }

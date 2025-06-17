@@ -62,9 +62,9 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "@bsv/overlay": "^0.2.1",
-    "@bsv/sdk": "^1.4.6",
-    "@bsv/wallet-toolbox-client": "^1.2.10",
+    "@bsv/overlay": "^0.4.0",
+    "@bsv/sdk": "^1.6.1",
+    "@bsv/wallet-toolbox-client": "^1.4.4",
     "mongodb": "^6.11.0"
   }
 }
