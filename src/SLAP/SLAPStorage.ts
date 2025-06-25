@@ -1,5 +1,5 @@
 import { Collection, Db } from 'mongodb'
-import { SLAPQuery, SLAPRecord, UTXOReference } from 'src/types.js'
+import { SLAPQuery, SLAPRecord, UTXOReference } from '../types.js'
 
 /**
  * Implements a storage engine for SLAP protocol

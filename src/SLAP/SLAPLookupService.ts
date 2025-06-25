@@ -1,7 +1,7 @@
 import { LookupService, LookupQuestion, LookupAnswer, LookupFormula, AdmissionMode, OutputAdmittedByTopic, OutputSpent, SpendNotificationMode } from '@bsv/overlay'
 import { PushDrop, Utils } from '@bsv/sdk'
 import { SLAPStorage } from './SLAPStorage.js'
-import { SLAPQuery } from 'src/types.js'
+import { SLAPQuery } from '../types.js'
 import SLAPLookupDocs from './SLAPLookup.docs.js'
 
 /**

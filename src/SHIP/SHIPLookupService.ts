@@ -1,7 +1,7 @@
 import { LookupService, LookupQuestion, LookupAnswer, LookupFormula, AdmissionMode, OutputAdmittedByTopic, OutputSpent, SpendNotificationMode } from '@bsv/overlay'
 import { SHIPStorage } from './SHIPStorage.js'
 import { PushDrop, Utils } from '@bsv/sdk'
-import { SHIPQuery } from 'src/types.js'
+import { SHIPQuery } from '../types.js'
 import SHIPLookupDocs from './SHIPLookup.docs.js'
 
 /**
