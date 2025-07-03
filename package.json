@@ -1,6 +1,6 @@
 {
   "name": "@bsv/overlay-discovery-services",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "type": "module",
   "description": "BSV Blockchain Overlay Services Engine",
   "main": "dist/cjs/mod.js",
@@ -62,9 +62,9 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "@bsv/overlay": "^0.4.0",
-    "@bsv/sdk": "^1.6.8",
-    "@bsv/wallet-toolbox-client": "^1.5.0",
+    "@bsv/overlay": "^0.4.1",
+    "@bsv/sdk": "^1.6.10",
+    "@bsv/wallet-toolbox-client": "^1.5.6",
     "mongodb": "^6.11.0"
   }
 }
