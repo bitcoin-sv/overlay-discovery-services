@@ -11,14 +11,14 @@ export class SHIPStorage {
    * Constructs a new SHIPStorage instance
    * @param {Db} db - connected mongo database instance
    */
-  constructor(private readonly db: Db) {
+  constructor (private readonly db: Db) {
     this.shipRecords = db.collection<SHIPRecord>('shipRecords')
   }
 
   /**
    * Ensures the necessary indexes are created for the collections.
    */
-  async ensureIndexes(): Promise<void> {
+  async ensureIndexes (): Promise<void> {
     await this.shipRecords.createIndex({ domain: 1, topic: 1 })
   }
 
@@ -30,7 +30,7 @@ export class SHIPStorage {
    * @param {string} domain domain name
    * @param {string} topic topic name
    */
-  async storeSHIPRecord(txid: string, outputIndex: number, identityKey: string, domain: string, topic: string): Promise<void> {
+  async storeSHIPRecord (txid: string, outputIndex: number, identityKey: string, domain: string, topic: string): Promise<void> {
     await this.shipRecords.insertOne({
       txid,
       outputIndex,
@@ -46,16 +46,16 @@ export class SHIPStorage {
    * @param {string} txid transaction id
    * @param {number} outputIndex index of the UTXO
    */
-  async deleteSHIPRecord(txid: string, outputIndex: number): Promise<void> {
+  async deleteSHIPRecord (txid: string, outputIndex: number): Promise<void> {
     await this.shipRecords.deleteOne({ txid, outputIndex })
   }
 
   /**
    * Finds SHIP records based on a given query object.
-   * @param {Object} query The query object which may contain properties for domain, topics, and/or identityKey.
+   * @param {Object} query The query object which may contain properties for domain, topics, identityKey, limit, and skip.
    * @returns {Promise<UTXOReference[]>} Returns matching UTXO references.
    */
-  async findRecord(query: SHIPQuery): Promise<UTXOReference[]> {
+  async findRecord (query: SHIPQuery): Promise<UTXOReference[]> {
     const mongoQuery: any = {}
 
     // Add domain to the query if provided
@@ -73,25 +73,55 @@ export class SHIPStorage {
       mongoQuery.identityKey = query.identityKey
     }
 
-    return await this.shipRecords
+    // Build the query with pagination
+    let cursor = this.shipRecords
       .find(mongoQuery)
-      .project<UTXOReference>({ txid: 1, outputIndex: 1 })
+      .project<UTXOReference>({ txid: 1, outputIndex: 1, createdAt: 1 })
+
+    cursor.sort({ createdAt: query.sortOrder ?? -1 })
+
+    // Apply pagination if provided
+    if (typeof query.skip === 'number' && query.skip > 0) {
+      cursor = cursor.skip(query.skip)
+    }
+
+    if (typeof query.limit === 'number' && query.limit > 0) {
+      cursor = cursor.limit(query.limit)
+    }
+
+    return await cursor
       .toArray()
       .then((results) =>
         results.map((record) => ({
           txid: record.txid,
-          outputIndex: record.outputIndex,
+          outputIndex: record.outputIndex
         }))
       )
   }
 
   /**
- * Returns all results tracked by the overlay
- * @returns {Promise<UTXOReference[]>} returns matching UTXO references
- */
-  async findAll(): Promise<UTXOReference[]> {
-    return await this.shipRecords.find({})
-      .project<UTXOReference>({ txid: 1, outputIndex: 1 })
+   * Returns all results tracked by the overlay
+   * @param {number} limit Optional limit for pagination
+   * @param {number} skip Optional skip for pagination
+   * @param {string} sortOrder Optional sort order
+   * @returns {Promise<UTXOReference[]>} returns matching UTXO references
+   */
+  async findAll (limit?: number, skip?: number, sortOrder?: 'asc' | 'desc'): Promise<UTXOReference[]> {
+    let cursor = this.shipRecords.find({})
+      .project<UTXOReference>({ txid: 1, outputIndex: 1, createdAt: 1 })
+
+    // Apply pagination if provided
+    cursor.sort({ createdAt: sortOrder ?? -1 })
+
+    if (typeof skip === 'number' && skip > 0) {
+      cursor = cursor.skip(skip)
+    }
+
+    if (typeof limit === 'number' && limit > 0) {
+      cursor = cursor.limit(limit)
+    }
+
+    return await cursor
       .toArray()
       .then(results => results.map(shipRecords => ({
         txid: shipRecords.txid,

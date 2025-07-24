@@ -19,7 +19,7 @@ export class SLAPTopicManager implements TopicManager {
    * @param previousCoins - The previous coins to consider.
    * @returns A promise that resolves with the admittance instructions.
    */
-  async identifyAdmissibleOutputs(
+  async identifyAdmissibleOutputs (
     beef: number[],
     previousCoins: number[]
   ): Promise<AdmittanceInstructions> {
@@ -79,7 +79,7 @@ export class SLAPTopicManager implements TopicManager {
    * Returns documentation specific to the SLAP topic manager.
    * @returns A promise that resolves to the documentation string.
    */
-  async getDocumentation(): Promise<string> {
+  async getDocumentation (): Promise<string> {
     return SLAPTopicDocs
   }
 
@@ -87,7 +87,7 @@ export class SLAPTopicManager implements TopicManager {
    * Returns metadata associated with this topic manager.
    * @returns A promise that resolves to an object containing metadata.
    */
-  async getMetaData(): Promise<{
+  async getMetaData (): Promise<{
     name: string
     shortDescription: string
     iconURL?: string

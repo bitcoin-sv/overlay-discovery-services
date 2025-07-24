@@ -13,9 +13,9 @@ import SHIPLookupDocs from './SHIPLookup.docs.js'
 export class SHIPLookupService implements LookupService {
   admissionMode: AdmissionMode = 'locking-script'
   spendNotificationMode: SpendNotificationMode = 'none'
-  constructor(public storage: SHIPStorage) { }
+  constructor (public storage: SHIPStorage) { }
 
-  async outputAdmittedByTopic(payload: OutputAdmittedByTopic): Promise<void> {
+  async outputAdmittedByTopic (payload: OutputAdmittedByTopic): Promise<void> {
     if (payload.mode !== 'locking-script') throw new Error('Invalid payload')
     const { topic, lockingScript, txid, outputIndex } = payload
     if (topic !== 'tm_ship') return
@@ -28,7 +28,7 @@ export class SHIPLookupService implements LookupService {
     await this.storage.storeSHIPRecord(txid, outputIndex, identityKey, domain, topicSupported)
   }
 
-  async outputSpent(payload: OutputSpent): Promise<void> {
+  async outputSpent (payload: OutputSpent): Promise<void> {
     if (payload.mode !== 'none') throw new Error('Invalid payload')
     const { topic, txid, outputIndex } = payload
     if (topic !== 'tm_ship') return
@@ -39,7 +39,7 @@ export class SHIPLookupService implements LookupService {
     await this.storage.deleteSHIPRecord(txid, outputIndex)
   }
 
-  async lookup(question: LookupQuestion): Promise<LookupFormula> {
+  async lookup (question: LookupQuestion): Promise<LookupFormula> {
     if (question.query === undefined || question.query === null) {
       throw new Error('A valid query must be provided!')
     }
@@ -47,29 +47,69 @@ export class SHIPLookupService implements LookupService {
       throw new Error('Lookup service not supported!')
     }
 
+    // Handle legacy "findAll" string query
     if (question.query === 'findAll') {
       return await this.storage.findAll()
     }
 
-    // Validate lookup query
-    const { domain, topics, identityKey } = question.query as SHIPQuery
-    if (typeof domain !== 'string' && typeof domain !== 'undefined') {
-      throw new Error('query.domain must be a string if provided')
+    // Handle object-based query
+    if (typeof question.query === 'object') {
+      const query = question.query as SHIPQuery
+
+      // Handle new findAll mode with pagination
+      if (query.findAll) {
+        const { limit, skip, sortOrder } = query
+
+        // Validate pagination parameters
+        if (typeof limit !== 'undefined' && (typeof limit !== 'number' || limit < 0)) {
+          throw new Error('query.limit must be a positive number if provided')
+        }
+        if (typeof skip !== 'undefined' && (typeof skip !== 'number' || skip < 0)) {
+          throw new Error('query.skip must be a non-negative number if provided')
+        }
+        if (typeof sortOrder !== 'undefined' && sortOrder !== 'asc' && sortOrder !== 'desc') {
+          throw new Error('query.sortOrder must be "asc" or "desc" if provided')
+        }
+
+        return await this.storage.findAll(limit, skip, sortOrder)
+      }
+
+      // Handle specific query with domain, topics, identityKey
+      const { domain, topics, identityKey, limit, skip, sortOrder } = query
+
+      // Validate query parameters
+      if (typeof domain !== 'string' && typeof domain !== 'undefined') {
+        throw new Error('query.domain must be a string if provided')
+      }
+      if (!Array.isArray(topics) && typeof topics !== 'undefined') {
+        throw new Error('query.topics must be an array of strings if provided')
+      }
+      if (typeof identityKey !== 'string' && typeof identityKey !== 'undefined') {
+        throw new Error('query.identityKey must be a string if provided')
+      }
+
+      // Validate pagination parameters
+      if (typeof limit !== 'undefined' && (typeof limit !== 'number' || limit < 0)) {
+        throw new Error('query.limit must be a positive number if provided')
+      }
+      if (typeof skip !== 'undefined' && (typeof skip !== 'number' || skip < 0)) {
+        throw new Error('query.skip must be a non-negative number if provided')
+      }
+      if (typeof sortOrder !== 'undefined' && sortOrder !== 'asc' && sortOrder !== 'desc') {
+        throw new Error('query.sortOrder must be "asc" or "desc" if provided')
+      }
+
+      return await this.storage.findRecord({ domain, topics, identityKey, limit, skip, sortOrder })
     }
-    if (!Array.isArray(topics) && typeof topics !== 'undefined') {
-      throw new Error('query.topics must be an array of strings if provided')
-    }
-    if (typeof identityKey !== 'string' && typeof identityKey !== 'undefined') {
-      throw new Error('query.identityKey must be a string if provided')
-    }
-    return await this.storage.findRecord({ domain, topics, identityKey })
+
+    throw new Error('Invalid query format. Query must be "findAll" string or an object with valid parameters.')
   }
 
-  async getDocumentation(): Promise<string> {
+  async getDocumentation (): Promise<string> {
     return SHIPLookupDocs
   }
 
-  async getMetaData(): Promise<{
+  async getMetaData (): Promise<{
     name: string
     shortDescription: string
     iconURL?: string
