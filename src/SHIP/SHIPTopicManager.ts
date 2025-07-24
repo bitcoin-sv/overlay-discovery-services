@@ -19,7 +19,7 @@ export class SHIPTopicManager implements TopicManager {
    * @param previousCoins - The previous coins to consider.
    * @returns A promise that resolves with the admittance instructions.
    */
-  async identifyAdmissibleOutputs(beef: number[], previousCoins: number[]): Promise<AdmittanceInstructions> {
+  async identifyAdmissibleOutputs (beef: number[], previousCoins: number[]): Promise<AdmittanceInstructions> {
     const outputsToAdmit: number[] = []
     try {
       const parsedTransaction = Transaction.fromBEEF(beef)
@@ -75,7 +75,7 @@ export class SHIPTopicManager implements TopicManager {
    * Returns documentation specific to the SHIP topic manager.
    * @returns A promise that resolves to the documentation string.
    */
-  async getDocumentation(): Promise<string> {
+  async getDocumentation (): Promise<string> {
     return SHIPTopicDocs
   }
 
@@ -83,7 +83,7 @@ export class SHIPTopicManager implements TopicManager {
    * Returns metadata associated with this topic manager.
    * @returns A promise that resolves to an object containing metadata.
    */
-  async getMetaData(): Promise<{
+  async getMetaData (): Promise<{
     name: string
     shortDescription: string
     iconURL?: string

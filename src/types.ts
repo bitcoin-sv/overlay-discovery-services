@@ -22,13 +22,21 @@ export interface SLAPRecord {
 }
 
 export interface SHIPQuery {
+  findAll?: boolean
   domain?: string
   topics?: string[]
   identityKey?: string
+  limit?: number
+  skip?: number
+  sortOrder?: 'asc' | 'desc'
 }
 
 export interface SLAPQuery {
+  findAll?: boolean
   domain?: string
   service?: string
   identityKey?: string
+  limit?: number
+  skip?: number
+  sortOrder?: 'asc' | 'desc'
 }
